@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1 id="disp-q">第1問</h1>
+    <div class="display-grid" id="grid"></div>
+
+    <script>
+        const socket = io();
+        socket.on('update', state => {
+            document.getElementById('disp-q').innerText = `第${state.currentNum}問`;
+            const grid = document.getElementById('grid');
+            grid.innerHTML = "";
+            
+            Object.keys(state.players).slice(0, 5).forEach(id => {
+                const p = state.players[id];
+                const resClass = p.isCorrect || "";
+                grid.innerHTML += `
+                    <div class="player-card ${resClass}">
+                        <h2>${p.name}</h2>
+                        <div class="ans">${state.isOpen ? p.cards.join(' → ') : '？？？'}</div>
+                        <div class="mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '✕' : ''}</div>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
