@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>管理者パネル</h1>
+        <button onclick="control('toggle')">回答を一斉表示/非表示</button>
+        <button onclick="control('next')" style="background: #666;">次の問題へ（リセット）</button>
+        <div id="admin-list"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        function control(type, id, result) { socket.emit('admin-control', { type, id, result }); }
+
+        socket.on('update', state => {
+            const list = document.getElementById('admin-list');
+            list.innerHTML = "";
+            Object.keys(state.players).forEach(id => {
+                const p = state.players[id];
+                list.innerHTML += `
+                    <div class="admin-item">
+                        <span>${p.name}: ${p.cards.join(',')}</span>
+                        <button onclick="control('judge', '${id}', 'correct')">◯</button>
+                        <button onclick="control('judge', '${id}', 'incorrect')" style="background:red">✕</button>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
