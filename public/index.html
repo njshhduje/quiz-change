@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2 id="q-num">問題 1</h2>
+        <input type="text" id="username" placeholder="名前を入力">
+        <div id="slots" class="drop-area">
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+        <div id="cards" class="card-area">
+            <div class="card" draggable="true" ondragstart="drag(event)" id="c1">選択肢 A</div>
+            <div class="card" draggable="true" ondragstart="drag(event)" id="c2">選択肢 B</div>
+            <div class="card" draggable="true" ondragstart="drag(event)" id="c3">選択肢 C</div>
+        </div>
+        <button onclick="send()">回答を送信</button>
+    </div>
+
+    <script>
+        const socket = io();
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            if (ev.target.className === "slot" && ev.target.children.length === 0) {
+                ev.target.appendChild(document.getElementById(data));
+            }
+        }
+        function send() {
+            const name = document.getElementById('username').value || "匿名";
+            const cards = Array.from(document.querySelectorAll('.slot')).map(s => s.innerText);
+            socket.emit('submit', { name, cards });
+            alert("送信しました！");
+        }
+        socket.on('update', state => { document.getElementById('q-num').innerText = `問題 ${state.currentNum}`; });
+    </script>
+</body>
+</html>
