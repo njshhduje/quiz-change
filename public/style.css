@@ -1,10 +1,91 @@
-body { background: #f0f2f5; font-family: sans-serif; text-align: center; }
-.container { background: white; padding: 2rem; border-radius: 15px; display: inline-block; margin-top: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.slot { width: 120px; height: 60px; border: 2px dashed #ccc; display: inline-block; margin: 10px; vertical-align: top; border-radius: 8px; }
-.card { width: 100px; padding: 10px; background: white; border: 1px solid #ddd; cursor: pointer; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-.display-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 50px; }
-.player-card { background: white; width: 200px; padding: 20px; border-radius: 15px; position: relative; min-height: 150px; }
-.correct { border: 5px solid #2ecc71; }
-.incorrect { border: 5px solid #e74c3c; }
-.mark { font-size: 3rem; font-weight: bold; position: absolute; top: 10px; right: 10px; }
-button { padding: 10px 20px; margin: 5px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; }
+:root {
+    --bg: #f0f2f5;
+    --card-white: #ffffff;
+    --primary: #007aff;
+    --success: #34c759;
+    --danger: #ff3b30;
+}
+
+body { font-family: 'Hiragino Sans', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+
+/* 回答者・管理画面用コンテナ */
+.container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+
+/* 8個並べるためのグリッド */
+.drop-area, .card-area {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 横に4つ */
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.slot {
+    aspect-ratio: 16 / 9;
+    border: 3px dashed #d1d1d6;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+}
+
+.card {
+    aspect-ratio: 16 / 9;
+    background: var(--card-white);
+    border: 1px solid #e5e5ea;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: grab;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+}
+.card:active { transform: scale(0.95); }
+
+/* ディスプレイ画面（5人分） */
+.display-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    height: 80vh;
+}
+
+.player-card {
+    background: white;
+    border-radius: 20px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 8px solid transparent;
+}
+
+.player-card.correct { border-color: var(--success); }
+.player-card.incorrect { border-color: var(--danger); }
+
+.ans-list {
+    width: 100%;
+    font-size: 0.9rem;
+    text-align: left;
+}
+.ans-item {
+    background: #f8f8f8;
+    margin: 4px 0;
+    padding: 8px;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary);
+}
+
+button {
+    font-size: 1.2rem;
+    padding: 15px 40px;
+    border-radius: 50px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
