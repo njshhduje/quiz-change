@@ -1,29 +1,31 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1 id="disp-q">第1問</h1>
+    <h1 id="q-title" style="font-size: 3rem; text-align: center;">第1問</h1>
     <div class="display-grid" id="grid"></div>
 
     <script>
         const socket = io();
         socket.on('update', state => {
-            document.getElementById('disp-q').innerText = `第${state.currentNum}問`;
+            document.getElementById('q-title').innerText = `第${state.currentNum}問`;
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
             
             Object.keys(state.players).slice(0, 5).forEach(id => {
                 const p = state.players[id];
-                const resClass = p.isCorrect || "";
+                const cardsHtml = p.cards.map((c, i) => `<div class="ans-item">${i+1}. ${c}</div>`).join('');
+                
                 grid.innerHTML += `
-                    <div class="player-card ${resClass}">
-                        <h2>${p.name}</h2>
-                        <div class="ans">${state.isOpen ? p.cards.join(' → ') : '？？？'}</div>
-                        <div class="mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '✕' : ''}</div>
+                    <div class="player-card ${p.isCorrect || ''}">
+                        <h2 style="font-size: 2rem; margin: 10px 0;">${p.name}</h2>
+                        <div class="ans-list">
+                            ${state.isOpen ? cardsHtml : '<div style="font-size:4rem; text-align:center; margin-top:50px;">?</div>'}
+                        </div>
                     </div>`;
             });
         });
