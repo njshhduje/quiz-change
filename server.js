@@ -10,10 +10,10 @@ app.use(express.static('public'));
 
 let gameState = {
     currentNum: 1,
-    isOpen: false,
+    revealedCount: 0, // 0〜8まで1つずつ増やす
     players: {},
-    // 8個の選択肢サンプル
-    choices: ["選択肢1", "選択肢2", "選択肢3", "選択肢4", "選択肢5", "選択肢6", "選択肢7", "選択肢8"]
+    // 8個の選択肢（中身は適宜書き換えてください）
+    choices: ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D", "選択肢 E", "選択肢 F", "選択肢 G", "選択肢 H"]
 };
 
 io.on('connection', (socket) => {
@@ -25,12 +25,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('admin-control', (action) => {
-        if (action.type === 'next') {
+        if (action.type === 'next-step') {
+            if (gameState.revealedCount < 8) gameState.revealedCount++;
+        } else if (action.type === 'hide-all') {
+            gameState.revealedCount = 0;
+        } else if (action.type === 'next-quiz') {
             gameState.currentNum++;
-            gameState.isOpen = false;
-            gameState.players = {}; 
-        } else if (action.type === 'toggle') {
-            gameState.isOpen = !gameState.isOpen;
+            gameState.revealedCount = 0;
+            gameState.players = {};
         } else if (action.type === 'judge') {
             if (gameState.players[action.id]) gameState.players[action.id].isCorrect = action.result;
         }
