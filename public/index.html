@@ -1,121 +1,67 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>回答者 - 並び替え</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-    <div class="container">
-        <header class="index-header">
-            <h1 id="q-header">第1問</h1>
-            <input type="text" id="username" placeholder="名前を入力" class="input-field">
-        </header>
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
-        <p class="guide">1番から順にドラッグして入れてください</p>
-        
-        <div id="slots" class="slot-container"></div>
-        
-        <hr class="separator">
-        
-        <div id="cards" class="card-grid"></div>
-        
-        <button id="send-btn" onclick="sendAnswer()" class="btn-primary">回答を送信</button>
-    </div>
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-    <script>
-const socket = io();
-const slotsEl = document.getElementById('slots');
-const cardsEl = document.getElementById('cards');
+app.use(express.static('public'));
 
-// Sortableのインスタンスを作成（後で無効化するために変数に入れる）
-const sortableSlots = new Sortable(slotsEl, {
-    group: 'quiz',
-    animation: 150,
-    ghostClass: 'sortable-ghost'
-});
+// ==========================================
+// 【重要】ここに正解を順番通りに書いてください
+// ==========================================
+const CORRECT_ANSWER = [
+    "選択肢A",
+    "選択肢B",
+    "選択肢C",
+    "選択肢D",
+    "選択肢E",
+    "選択肢F",
+    "選択肢G",
+    "選択肢H"
+];
 
-const sortableCards = new Sortable(cardsEl, {
-    group: 'quiz',
-    animation: 150,
-    ghostClass: 'sortable-ghost'
-});
+let gameState = {
+    revealedCount: 0,
+    players: {},
+    choices: [...CORRECT_ANSWER].sort(() => Math.random() - 0.5) // シャッフルして配布
+};
 
-// ボタンから呼び出される関数
-function sendAnswer() {
-    const nameInput = document.getElementById('username');
-    const btn = document.getElementById('send-btn');
-    const name = nameInput.value.trim();
+io.on('connection', (socket) => {
+    socket.emit('update', gameState);
 
-    // 枠内のカードテキストを順番に取得
-    const answers = Array.from(slotsEl.children)
-        .map(el => el.innerText.trim())
-        .filter(t => t !== "");
+    // 回答送信
+    socket.on('submit', (data) => {
+        if (gameState.players[socket.id]) return;
+        gameState.players[socket.id] = { 
+            name: data.name, 
+            cards: data.cards, 
+            isCorrect: null 
+        };
+        io.emit('update', gameState);
+    });
 
-    // --- バリデーション ---
-    if (!name) {
-        alert("名前を入力してください");
-        return;
-    }
-    if (answers.length < 8) {
-        alert("8つの選択肢すべてを枠（Slots）に入れてください");
-        return;
-    }
-
-    // --- サーバーへ送信 ---
-    socket.emit('submit', { name: name, cards: answers });
-
-    // --- 送信後のロック処理 ---
-    btn.disabled = true; // ボタンを無効化
-    btn.innerText = "送信済み";
-    btn.classList.add("btn-disabled"); // 見た目を変える
-    
-    nameInput.disabled = true; // 名前入力をロック
-    
-    // ドラッグ＆ドロップを完全に禁止
-    sortableSlots.option("disabled", true);
-    sortableCards.option("disabled", true);
-    
-    alert("送信が完了しました！表示されるまでお待ちください。");
-}
-
-// サーバーからの更新（次の問題へリセットなど）
-socket.on('update', state => {
-    document.getElementById('q-header').innerText = `第${state.currentNum}問`;
-    
-    // 参加者データが空（リセット時）ならロックを解除して画面を再構築
-    if (Object.keys(state.players).length === 0) {
-        const btn = document.getElementById('send-btn');
-        const nameInput = document.getElementById('username');
-
-        btn.disabled = false;
-        btn.innerText = "回答を送信";
-        btn.classList.remove("btn-disabled");
-        nameInput.disabled = false;
-        
-        // ドラッグを許可
-        sortableSlots.option("disabled", false);
-        sortableCards.option("disabled", false);
-
-        // 枠とカードの再生成
-        slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
-        for(let i=0; i<8; i++) {
-            const s = document.createElement('div');
-            s.className = "slot-item";
-            s.setAttribute('data-num', i + 1);
-            slotsEl.appendChild(s);
+    // 管理者操作
+    socket.on('admin-control', (action) => {
+        if (action.type === 'next-step') {
+            if (gameState.revealedCount < 8) gameState.revealedCount++;
+        } 
+        else if (action.type === 'scoring') {
+            // 全プレイヤーの回答を正解と照合
+            Object.keys(gameState.players).forEach(id => {
+                const player = gameState.players[id];
+                const isAllCorrect = JSON.stringify(player.cards) === JSON.stringify(CORRECT_ANSWER);
+                player.isCorrect = isAllCorrect ? 'correct' : 'incorrect';
+            });
         }
-        state.choices.forEach(text => {
-            const c = document.createElement('div');
-            c.className = "card-item";
-            c.innerText = text;
-            cardsEl.appendChild(c);
-        });
-    }
+        else if (action.type === 'reset') {
+            gameState.revealedCount = 0;
+            gameState.players = {};
+        }
+        io.emit('update', gameState);
+    });
 });
-    </script>
-</body>
-</html>
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
