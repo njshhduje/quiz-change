@@ -27,50 +27,55 @@
     </div>
 
     <script>
-        const socket = io();
-        const slotsEl = document.getElementById('slots');
-        const cardsEl = document.getElementById('cards');
+// index.htmlのscriptタグ内を以下に差し替えてください
+const socket = io();
+const slotsEl = document.getElementById('slots');
+const cardsEl = document.getElementById('cards');
 
-        // ドラッグ＆ドロップの初期化
-        new Sortable(slotsEl, { group: 'quiz', animation: 150, ghostClass: 'sortable-ghost' });
-        new Sortable(cardsEl, { group: 'quiz', animation: 150, ghostClass: 'sortable-ghost' });
+// SortableJSの設定（枠へのドロップを確実にする）
+new Sortable(slotsEl, {
+    group: 'quiz-group', // cardsElと同じグループ名にする
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onAdd: function (evt) {
+        // カードが枠に追加された時の処理
+        checkSlotCount();
+    }
+});
 
-        socket.on('update', state => {
-            document.getElementById('q-header').innerText = `第${state.currentNum}問`;
-            // 全員リセットされた時のみ再構築
-            if (Object.keys(state.players).length === 0) {
-                slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
-                // 8つの枠を作成
-                for(let i=0; i<8; i++) {
-                    const s = document.createElement('div');
-                    s.className = "slot-item";
-                    s.setAttribute('data-num', i + 1);
-                    slotsEl.appendChild(s);
-                }
-                // 8つのカードを作成
-                state.choices.forEach(text => {
-                    const c = document.createElement('div');
-                    c.className = "card-item";
-                    c.innerText = text;
-                    cardsEl.appendChild(c);
-                });
-                document.getElementById('send-btn').disabled = false;
-                document.getElementById('send-btn').innerText = "回答を送信";
-            }
+new Sortable(cardsEl, {
+    group: 'quiz-group',
+    animation: 150,
+    ghostClass: 'sortable-ghost'
+});
+
+// 枠が8個を超えないように、または空欄を維持するロジック
+function checkSlotCount() {
+    // 枠内のアイテムがカードであれば、背景の番号などを調整する処理（任意）
+}
+
+socket.on('update', state => {
+    document.getElementById('q-header').innerText = `第${state.currentNum}問`;
+    
+    // リセット時（次の問題へ）の処理
+    if (Object.keys(state.players).length === 0) {
+        slotsEl.innerHTML = ""; 
+        cardsEl.innerHTML = "";
+        
+        // 最初に空のスロットを表示したい場合は、これらを「空のカード」として扱うと操作が難しいので、
+        // シンプルに「回答エリア」へカードを並べていくUIがベストです。
+        state.choices.forEach((text, i) => {
+            const c = document.createElement('div');
+            c.className = "card-item";
+            c.innerText = text;
+            cardsEl.appendChild(c);
         });
-
-        function sendAnswer() {
-            const name = document.getElementById('username').value;
-            // 枠内にある文字だけを抽出
-            const answers = Array.from(slotsEl.children).map(el => el.innerText.trim()).filter(t => t !== "");
-            
-            if (!name) return alert("名前を入力してください");
-            if (answers.length < 8) return alert("8つ全て枠に入れてください！");
-            
-            socket.emit('submit', { name, cards: answers });
-            document.getElementById('send-btn').disabled = true;
-            document.getElementById('send-btn').innerText = "送信完了";
-        }
+        
+        // ガイド用の空枠を背景として作りたい場合はCSSで対応します
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('send-btn').innerText = "回答を送信";
+    }
+});
     </script>
 </body>
 </html>
