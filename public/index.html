@@ -1,67 +1,80 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クイズ回答</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="username" placeholder="名前を入力" class="input-field">
+        <p class="guide">1番から順にドラッグして入れてください</p>
+        
+        <div id="slots" class="slot-container"></div>
+        <hr>
+        <div id="cards" class="card-grid"></div>
+        
+        <button id="send-btn" onclick="sendAnswer()" class="btn-primary">回答を送信</button>
+    </div>
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+    <script>
+        const socket = io();
+        const slotsEl = document.getElementById('slots');
+        const cardsEl = document.getElementById('cards');
+        let sortables = [];
 
-app.use(express.static('public'));
-
-// ==========================================
-// 【重要】ここに正解を順番通りに書いてください
-// ==========================================
-const CORRECT_ANSWER = [
-    "選択肢A",
-    "選択肢B",
-    "選択肢C",
-    "選択肢D",
-    "選択肢E",
-    "選択肢F",
-    "選択肢G",
-    "選択肢H"
-];
-
-let gameState = {
-    revealedCount: 0,
-    players: {},
-    choices: [...CORRECT_ANSWER].sort(() => Math.random() - 0.5) // シャッフルして配布
-};
-
-io.on('connection', (socket) => {
-    socket.emit('update', gameState);
-
-    // 回答送信
-    socket.on('submit', (data) => {
-        if (gameState.players[socket.id]) return;
-        gameState.players[socket.id] = { 
-            name: data.name, 
-            cards: data.cards, 
-            isCorrect: null 
-        };
-        io.emit('update', gameState);
-    });
-
-    // 管理者操作
-    socket.on('admin-control', (action) => {
-        if (action.type === 'next-step') {
-            if (gameState.revealedCount < 8) gameState.revealedCount++;
-        } 
-        else if (action.type === 'scoring') {
-            // 全プレイヤーの回答を正解と照合
-            Object.keys(gameState.players).forEach(id => {
-                const player = gameState.players[id];
-                const isAllCorrect = JSON.stringify(player.cards) === JSON.stringify(CORRECT_ANSWER);
-                player.isCorrect = isAllCorrect ? 'correct' : 'incorrect';
+        function initSortable() {
+            sortables.forEach(s => s.destroy());
+            sortables = [];
+            
+            sortables.push(new Sortable(cardsEl, { group: 'quiz', animation: 150 }));
+            document.querySelectorAll('.slot-box').forEach(el => {
+                sortables.push(new Sortable(el, {
+                    group: 'quiz',
+                    animation: 150,
+                    onAdd: function(evt) {
+                        if (evt.to.children.length > 1) {
+                            const old = evt.to.querySelector('.card-item:not(.sortable-drag)');
+                            if (old) cardsEl.appendChild(old);
+                        }
+                    }
+                }));
             });
         }
-        else if (action.type === 'reset') {
-            gameState.revealedCount = 0;
-            gameState.players = {};
-        }
-        io.emit('update', gameState);
-    });
-});
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        socket.on('update', state => {
+            if (Object.keys(state.players).length === 0) {
+                slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
+                for(let i=0; i<8; i++) {
+                    slotsEl.innerHTML += `<div class="slot-row"><span class="slot-num">${i+1}</span><div class="slot-box"></div></div>`;
+                }
+                state.choices.forEach(text => {
+                    const c = document.createElement('div');
+                    c.className = "card-item";
+                    c.innerText = text;
+                    cardsEl.appendChild(c);
+                });
+                initSortable();
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').innerText = "回答を送信";
+            }
+        });
+
+        function sendAnswer() {
+            const name = document.getElementById('username').value.trim();
+            const answers = Array.from(document.querySelectorAll('.slot-box'))
+                .map(s => s.querySelector('.card-item')?.innerText).filter(Boolean);
+
+            if (!name || answers.length < 8) return alert("名前を入力し、8つ全て埋めてください");
+
+            socket.emit('submit', { name, cards: answers });
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('send-btn').innerText = "送信完了";
+            sortables.forEach(s => s.option("disabled", true));
+        }
+    </script>
+</body>
+</html>
