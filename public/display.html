@@ -1,34 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
+<body style="background: #e9ecef;">
+    <div class="display-2x3" id="grid"></div>
     <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-    <h1 id="q-title" style="font-size: 3rem; text-align: center;">第1問</h1>
-    <div class="display-grid" id="grid"></div>
-
     <script>
         const socket = io();
         socket.on('update', state => {
-            document.getElementById('q-title').innerText = `第${state.currentNum}問`;
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
-            
-            Object.keys(state.players).slice(0, 5).forEach(id => {
+            Object.keys(state.players).slice(0, 6).forEach(id => {
                 const p = state.players[id];
-                const cardsHtml = p.cards.map((c, i) => `<div class="ans-item">${i+1}. ${c}</div>`).join('');
-                
+                let cardsHtml = "";
+                for(let i=0; i<8; i++) {
+                    const content = (i < state.revealedCount) ? p.cards[i] : "？？？";
+                    cardsHtml += `<div class="ans-item"><span>${i+1}</span> <span>${content}</span></div>`;
+                }
                 grid.innerHTML += `
-                    <div class="player-card ${p.isCorrect || ''}">
-                        <h2 style="font-size: 2rem; margin: 10px 0;">${p.name}</h2>
-                        <div class="ans-list">
-                            ${state.isOpen ? cardsHtml : '<div style="font-size:4rem; text-align:center; margin-top:50px;">?</div>'}
-                        </div>
+                    <div class="player-box ${p.isCorrect || ''}">
+                        <h2 style="font-size: 2rem; margin: 0 0 10px 0; text-align:center;">${p.name}</h2>
+                        <div>${cardsHtml}</div>
                     </div>`;
             });
         });
     </script>
 </body>
-</html>
