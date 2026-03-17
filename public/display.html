@@ -1,44 +1,31 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
-    <title>表示用</title>
 </head>
 <body class="display-bg">
-    <div class="display-header">
-        <h1 id="display-q-num">第 1 問</h1>
-    </div>
-
-    <div class="display-2x3" id="grid"></div>
+    <div class="display-header"><h1>並べ替えクイズ</h1></div>
+    <div class="display-grid-5" id="grid"></div>
 
     <script>
         const socket = io();
         socket.on('update', state => {
-            document.getElementById('display-q-num').innerText = `第 ${state.currentNum} 問`;
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
-            
-            const playerIds = Object.keys(state.players).slice(0, 6);
-            playerIds.forEach(id => {
+            Object.keys(state.players).forEach(id => {
                 const p = state.players[id];
-                let cellsHtml = "";
-                
+                let cardsHtml = "";
                 for(let i=0; i<8; i++) {
-                    const isOpen = (i < state.revealedCount);
-                    cellsHtml += `
-                        <div class="ans-cell ${isOpen ? 'is-open' : ''}">
-                            <span class="cell-index">${i+1}</span>
-                            <span class="cell-val">${isOpen ? p.cards[i] : '？？？'}</span>
-                        </div>`;
+                    const open = i < state.revealedCount;
+                    cardsHtml += `<div class="mini-card ${open ? 'is-open' : ''}">${open ? p.cards[i] : ''}</div>`;
                 }
-
                 grid.innerHTML += `
                     <div class="p-panel ${p.isCorrect || ''}">
-                        <div class="p-header">${p.name}</div>
-                        <div class="p-body">${cellsHtml}</div>
-                        <div class="p-mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '×' : ''}</div>
+                        <div class="p-name">${p.name}</div>
+                        <div class="p-cards-grid">${cardsHtml}</div>
+                        <div class="mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '×' : ''}</div>
                     </div>`;
             });
         });
