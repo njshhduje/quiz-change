@@ -279,3 +279,46 @@ body {
     opacity: 0.3;
     background: var(--bg-gray);
 }
+
+/* スロットコンテナを「カードが入る場所」として定義 */
+.slot-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 450px; /* 8個分が入る高さを確保 */
+    padding: 15px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+/* カードが枠に入った時のスタイル */
+.card-item {
+    width: 100%; /* 親の幅に合わせる */
+    height: 50px;
+    background: #007aff;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: grab;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin: 0; /* 余計なマージンを消す */
+    z-index: 10;
+}
+
+/* 枠を「点線」で見せたい場合（擬似要素で背景に番号を置く） */
+.slot-container::before {
+    content: "1\A 2\A 3\A 4\A 5\A 6\A 7\A 8";
+    white-space: pre;
+    position: absolute;
+    left: 20px;
+    line-height: 60px; /* cardの高さ+gapに合わせる */
+    color: #cbd5e1;
+    font-size: 1.5rem;
+    font-weight: bold;
+    pointer-events: none;
+}
