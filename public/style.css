@@ -1,167 +1,110 @@
+/* 全体のベース */
 :root {
-    --primary: #007aff; --success: #34c759; --danger: #ff3b30; --gray: #8e8e93;
-}
-body { font-family: -apple-system, sans-serif; background: #f2f2f7; color: #1c1c1e; margin: 0; }
-.container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 20px; text-align: center; }
-
-/* Grid Layouts */
-.grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 80px; padding: 10px; }
-.display-2x3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; height: 100vh; padding: 20px; box-sizing: border-box; }
-
-/* Items */
-.slot-item, .card-item { height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #fff; border: 1px solid #d1d1d6; cursor: grab; }
-.card-item { background: var(--primary); color: white; border: none; }
-.ghost { opacity: 0.3; }
-
-/* Display Panels */
-.player-panel { background: white; border-radius: 24px; padding: 20px; display: flex; flex-direction: column; border: 8px solid transparent; }
-.player-panel.correct { border-color: var(--success); }
-.player-panel.incorrect { border-color: var(--danger); }
-.player-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #eee; }
-.ans-line { display: flex; justify-content: space-between; padding: 6px 12px; background: #f8f8f8; margin: 2px 0; border-radius: 8px; font-size: 1.2rem; }
-.ans-line .num { color: var(--gray); font-weight: bold; }
-
-/* Admin UI */
-.admin-btns { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-.btn-primary, .btn-step, .btn-next { padding: 12px 24px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
-.btn-reset { background: var(--gray); color: white; border: none; border-radius: 12px; padding: 12px; cursor: pointer; }
-.admin-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
-.btn-o { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; }
-.btn-x { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 8px; }
-
-/* ディスプレイ専用の背景とレイアウト */
-.display-body {
-    background: radial-gradient(circle, #ffffff 0%, #e2e8f0 100%);
-    overflow: hidden;
-    height: 100vh;
-    padding: 0;
+    --bg-light: #f8fafc;
+    --panel-white: #ffffff;
+    --accent-blue: #007aff;
+    --success-green: #34c759;
+    --error-red: #ff3b30;
 }
 
-.display-header {
+body { font-family: 'Hiragino Sans', sans-serif; background: var(--bg-light); margin: 0; }
+
+/* --- 回答者画面 (index) 用 --- */
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+
+/* 縦に並べるスロット */
+.slot-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 30px;
+}
+
+.slot-item {
+    height: 50px;
+    background: #fff;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    position: relative;
+}
+
+.slot-item::before {
+    content: attr(data-num);
+    position: absolute;
+    right: 15px;
+    color: #e2e8f0;
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+/* 選択肢カード */
+.card-item {
+    background: var(--accent-blue);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
     text-align: center;
-    padding: 20px 0;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    font-weight: bold;
+    cursor: grab;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    margin: 5px;
+    width: calc(50% - 10px); /* 2列で並べる */
+    display: inline-block;
 }
 
-#q-title { margin: 0; font-size: 1.2rem; color: #64748b; letter-spacing: 4px; }
-#q-num-badge { font-size: 2.5rem; font-weight: 900; color: #1e293b; }
-
+/* --- ディスプレイ画面用 (2x3 Grid) --- */
 .display-2x3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 30px;
-    padding: 40px;
-    height: calc(100vh - 120px);
-    justify-content: center;
+    gap: 25px;
+    padding: 30px;
+    height: 100vh;
+    box-sizing: border-box;
 }
 
-/* プレイヤーパネル */
-.player-card-v2 {
-    background: #ffffff;
-    border-radius: 30px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+.player-panel-v3 {
+    background: white;
+    border-radius: 25px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
-    position: relative;
     overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 6px solid transparent;
 }
 
-.player-tag {
+.player-panel-v3.correct { border-color: var(--success-green); }
+.player-panel-v3.incorrect { border-color: var(--error-red); }
+
+.p-name-banner {
     background: #1e293b;
-    color: #ffffff;
-    text-align: center;
+    color: white;
     padding: 10px;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    text-align: center;
     font-weight: bold;
 }
 
-.ans-list-v2 {
-    padding: 15px;
+.ans-grid-mini {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 回答を2列でコンパクトに表示 */
+    gap: 5px;
+    padding: 10px;
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
 }
 
-.ans-row {
+.ans-cell {
+    background: #f1f5f9;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
     display: flex;
     align-items: center;
-    background: #f1f5f9;
-    margin: 2px 0;
-    padding: 8px 15px;
-    border-radius: 12px;
-    height: 10%;
-    transition: all 0.3s;
 }
 
-.ans-row.revealed {
-    background: #e0f2fe;
-    border-left: 6px solid #0ea5e9;
-    animation: slideIn 0.4s ease-out;
-}
-
-.ans-row.hidden {
-    background: #f1f5f9;
-    opacity: 0.5;
-}
-
-.ans-num {
-    font-weight: 900;
-    color: #94a3b8;
-    margin-right: 15px;
-    font-size: 1.1rem;
-}
-
-.ans-text {
-    font-weight: bold;
-    color: #0f172a;
-    font-size: 1.2rem;
-}
-
-/* 正誤判定の演出 */
-.player-card-v2.correct {
-    box-shadow: 0 0 0 10px #22c55e inset, 0 20px 25px rgba(34, 197, 94, 0.2);
-}
-.player-card-v2.incorrect {
-    box-shadow: 0 0 0 10px #ef4444 inset;
-    filter: grayscale(0.5);
-}
-
-.judge-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg);
-    font-size: 4rem;
-    font-weight: 900;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.correct .judge-overlay {
-    opacity: 1;
-    color: #22c55e;
-    text-shadow: 0 0 20px rgba(255,255,255,0.8);
-    animation: popIn 0.5s forwards;
-}
-
-.incorrect .judge-overlay {
-    opacity: 1;
-    color: #ef4444;
-    animation: popIn 0.5s forwards;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(-20px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes popIn {
-    0% { transform: translate(-50%, -50%) scale(0) rotate(0); }
-    80% { transform: translate(-50%, -50%) scale(1.2) rotate(-20deg); }
-    100% { transform: translate(-50%, -50%) scale(1) rotate(-15deg); }
-}
+.ans-cell.open { background: #e0f2fe; border-left: 4px solid var(--accent-blue); }
+.cell-num { color: #94a3b8; margin-right: 8px; font-size: 0.7rem; }
