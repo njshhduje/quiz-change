@@ -31,7 +31,7 @@ const socket = io();
 const slotsEl = document.getElementById('slots');
 const cardsEl = document.getElementById('cards');
 
-// Sortableのインスタンスを保持（後で無効化するため）
+// Sortableのインスタンスを作成（後で無効化するために変数に入れる）
 const sortableSlots = new Sortable(slotsEl, {
     group: 'quiz',
     animation: 150,
@@ -44,13 +44,13 @@ const sortableCards = new Sortable(cardsEl, {
     ghostClass: 'sortable-ghost'
 });
 
-// 送信関数
+// ボタンから呼び出される関数
 function sendAnswer() {
     const nameInput = document.getElementById('username');
     const btn = document.getElementById('send-btn');
     const name = nameInput.value.trim();
 
-    // 枠内のカードを取得（空白を除外）
+    // 枠内のカードテキストを順番に取得
     const answers = Array.from(slotsEl.children)
         .map(el => el.innerText.trim())
         .filter(t => t !== "");
@@ -61,45 +61,46 @@ function sendAnswer() {
         return;
     }
     if (answers.length < 8) {
-        alert("8つ全ての選択肢を上の枠に入れてください！");
+        alert("8つの選択肢すべてを枠（Slots）に入れてください");
         return;
     }
 
-    // --- 送信処理 ---
-    const payload = { name: name, cards: answers };
-    socket.emit('submit', payload);
+    // --- サーバーへ送信 ---
+    socket.emit('submit', { name: name, cards: answers });
 
-    // --- 送信後のロック ---
-    btn.disabled = true;
-    btn.innerText = "送信完了（待機中）";
-    nameInput.disabled = true;
+    // --- 送信後のロック処理 ---
+    btn.disabled = true; // ボタンを無効化
+    btn.innerText = "送信済み";
+    btn.classList.add("btn-disabled"); // 見た目を変える
     
-    // ドラッグ＆ドロップを禁止にする
+    nameInput.disabled = true; // 名前入力をロック
+    
+    // ドラッグ＆ドロップを完全に禁止
     sortableSlots.option("disabled", true);
     sortableCards.option("disabled", true);
     
-    // 視覚的に「確定した」感を出るようにする
-    document.querySelector('.container').style.opacity = "0.7";
-    alert("送信しました！管理者が公開するまでお待ちください。");
+    alert("送信が完了しました！表示されるまでお待ちください。");
 }
 
-// サーバーから「次の問題」の合図が来たらロックを解除
+// サーバーからの更新（次の問題へリセットなど）
 socket.on('update', state => {
     document.getElementById('q-header').innerText = `第${state.currentNum}問`;
     
-    // サーバー側で players が空（リセット状態）なら画面を元に戻す
+    // 参加者データが空（リセット時）ならロックを解除して画面を再構築
     if (Object.keys(state.players).length === 0) {
         const btn = document.getElementById('send-btn');
         const nameInput = document.getElementById('username');
-        
+
         btn.disabled = false;
         btn.innerText = "回答を送信";
+        btn.classList.remove("btn-disabled");
         nameInput.disabled = false;
+        
+        // ドラッグを許可
         sortableSlots.option("disabled", false);
         sortableCards.option("disabled", false);
-        document.querySelector('.container').style.opacity = "1";
-        
-        // カードの再生成（既存のコード通り）
+
+        // 枠とカードの再生成
         slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
         for(let i=0; i<8; i++) {
             const s = document.createElement('div');
