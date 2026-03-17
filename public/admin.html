@@ -1,35 +1,30 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-    <div class="container">
-        <h1>管理者パネル</h1>
-        <button onclick="control('toggle')">回答を一斉表示/非表示</button>
-        <button onclick="control('next')" style="background: #666;">次の問題へ（リセット）</button>
-        <div id="admin-list"></div>
+<div class="container">
+    <h1>管理パネル</h1>
+    <div style="margin-bottom: 20px;">
+        <button onclick="control('next-step')" style="background: #28a745;">1つ回答を表示 (次へ)</button>
+        <button onclick="control('hide-all')" style="background: #6c757d;">回答を隠す</button>
+        <button onclick="control('next-quiz')" style="background: #000;">次の問題へ</button>
     </div>
+    <div id="admin-list" style="text-align: left;"></div>
+</div>
 
-    <script>
-        const socket = io();
-        function control(type, id, result) { socket.emit('admin-control', { type, id, result }); }
-
-        socket.on('update', state => {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = "";
-            Object.keys(state.players).forEach(id => {
-                const p = state.players[id];
-                list.innerHTML += `
-                    <div class="admin-item">
-                        <span>${p.name}: ${p.cards.join(',')}</span>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    function control(type, id, result) { socket.emit('admin-control', { type, id, result }); }
+    socket.on('update', state => {
+        const list = document.getElementById('admin-list');
+        list.innerHTML = `<h3>現在の表示数: ${state.revealedCount} / 8</h3>`;
+        Object.keys(state.players).forEach(id => {
+            const p = state.players[id];
+            list.innerHTML += `
+                <div style="border-bottom:1px solid #eee; padding:10px; display:flex; justify-content:space-between;">
+                    <span>${p.name} (${p.cards.join(' > ')})</span>
+                    <div>
                         <button onclick="control('judge', '${id}', 'correct')">◯</button>
                         <button onclick="control('judge', '${id}', 'incorrect')" style="background:red">✕</button>
-                    </div>`;
-            });
+                    </div>
+                </div>`;
         });
-    </script>
-</body>
-</html>
+    });
+</script>
