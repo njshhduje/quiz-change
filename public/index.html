@@ -3,167 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>回答画面</title>
+    <title>回答者</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1 id="q-header">第1問</h1>
-            <input type="text" id="username" placeholder="名前を入力" class="name-input">
-        </header>
-
-        <section>
-            <h3>【回答エリア】</h3>
-            <div id="slots" class="grid-8"></div>
-        </section>
-
-        <section>
-            <h3>【選択肢】</h3>
-            <div id="cards" class="grid-8 card-container" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-        </section>
-
-        <div style="margin-top: 30px;">
-            <button id="send-btn" onclick="sendAnswer()" class="main-btn">回答を送信</button>
-        </div>
+        <h1 id="q-header">第1問</h1>
+        <input type="text" id="username" placeholder="名前を入力" class="input-field">
+        
+        <p class="guide">下の選択肢を上の枠へドラッグしてください</p>
+        <div id="slots" class="grid-8 sort-area"></div>
+        
+        <hr>
+        <div id="cards" class="grid-8 sort-area"></div>
+        
+        <button id="send-btn" onclick="sendAnswer()" class="btn-primary">回答を送信</button>
     </div>
 
     <script>
         const socket = io();
+        const slotsEl = document.getElementById('slots');
+        const cardsEl = document.getElementById('cards');
 
-        // ドラッグ開始
-        function drag(ev) {
-            ev.dataTransfer.setData("text", ev.target.id);
-            ev.target.style.opacity = "0.4"; // ドラッグ中をわかりやすく
-        }
-
-        // ドラッグ終了
-        function dragEnd(ev) {
-            ev.target.style.opacity = "1";
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault(); // これがないとドロップできない
-        }
-
-        function drop(ev) {
-            ev.preventDefault();
-            const data = ev.dataTransfer.getData("text");
-            const draggedElement = document.getElementById(data);
-            
-            // ドロップ先が「スロット」かつ「空」の場合
-            if (ev.target.classList.contains("slot") && ev.target.children.length === 1) { 
-                // span(番号)しか入っていない状態なので追加OK
-                ev.target.appendChild(draggedElement);
-            } 
-            // ドロップ先が「選択肢エリア」の場合（戻す操作）
-            else if (ev.target.id === "cards") {
-                ev.target.appendChild(draggedElement);
-            }
-        }
+        // 並び替え機能を有効化
+        [slotsEl, cardsEl].forEach(el => {
+            new Sortable(el, { group: 'quiz', animation: 150, ghostClass: 'ghost' });
+        });
 
         socket.on('update', state => {
             document.getElementById('q-header').innerText = `第${state.currentNum}問`;
-            
-            // プレイヤーデータがリセットされた時のみ再構築
             if (Object.keys(state.players).length === 0) {
-                const slotsContainer = document.getElementById('slots');
-                const cardsContainer = document.getElementById('cards');
-                
-                slotsContainer.innerHTML = "";
-                cardsContainer.innerHTML = "";
-
-                // スロット生成
-                for (let i = 0; i < 8; i++) {
-                    const slot = document.createElement('div');
-                    slot.className = "slot";
-                    slot.innerHTML = `<span class="slot-num">${i+1}</span>`;
-                    slot.ondrop = drop;
-                    slot.ondragover = allowDrop;
-                    slotsContainer.appendChild(slot);
+                slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
+                // 空のスロットを8つ作成
+                for(let i=0; i<8; i++) {
+                    const s = document.createElement('div');
+                    s.className = "slot-item";
+                    slotsEl.appendChild(s);
                 }
-
-                // カード生成
-                state.choices.forEach((text, index) => {
-                    const card = document.createElement('div');
-                    card.className = "card";
-                    card.id = "card-" + index;
-                    card.draggable = true; // 明示的に有効化
-                    card.innerText = text;
-                    card.addEventListener('dragstart', drag);
-                    card.addEventListener('dragend', dragEnd);
-                    cardsContainer.appendChild(card);
+                // カードを8つ作成
+                state.choices.forEach(text => {
+                    const c = document.createElement('div');
+                    c.className = "card-item";
+                    c.innerText = text;
+                    cardsEl.appendChild(c);
                 });
-
                 document.getElementById('send-btn').disabled = false;
-                document.getElementById('send-btn').innerText = "回答を送信";
             }
         });
 
         function sendAnswer() {
             const name = document.getElementById('username').value;
-            if (!name) return alert("名前を入力してください");
-
-            const slots = document.querySelectorAll('.slot');
-            const answerOrder = [];
-            slots.forEach(slot => {
-                const card = slot.querySelector('.card');
-                if (card) answerOrder.push(card.innerText);
-            });
-
-            if (answerOrder.length < 8) return alert("8つ全て並べてください");
-
-            socket.emit('submit', { name: name, cards: answerOrder });
+            const answers = Array.from(slotsEl.children).map(el => el.innerText).filter(t => t !== "");
+            if (!name || answers.length < 8) return alert("名前を入力し、8つ全て枠に入れてください");
+            socket.emit('submit', { name, cards: answers });
             document.getElementById('send-btn').disabled = true;
-            document.getElementById('send-btn').innerText = "送信完了";
         }
     </script>
-
-    <style>
-        /* レイアウト微調整 */
-        .grid-8 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 10px;
-            min-height: 80px;
-        }
-        .slot {
-            height: 60px;
-            background: #fff;
-            border: 2px dashed #bbb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .card {
-            width: 90%;
-            height: 45px;
-            background: #007bff;
-            color: white;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: grab;
-            z-index: 10; /* カードを前面に */
-            user-select: none;
-        }
-        .slot-num {
-            position: absolute;
-            top: 2px;
-            left: 5px;
-            color: #ddd;
-            font-size: 12px;
-            z-index: 1;
-        }
-        .card-container {
-            border: 2px solid #ddd;
-        }
-    </style>
 </body>
 </html>
