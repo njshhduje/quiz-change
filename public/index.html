@@ -2,46 +2,169 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回答画面 - 並び替えクイズ</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div class="container">
-        <h2 id="q-num">問題 1</h2>
-        <input type="text" id="username" placeholder="名前を入力">
-        <div id="slots" class="drop-area">
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        <header>
+            <h1 id="q-header">第1問</h1>
+            <input type="text" id="username" placeholder="名前を入力（例: プレイヤー1）" class="name-input">
+        </header>
+
+        <section>
+            <h3>【回答エリア】 1番から順に入れてください</h3>
+            <div id="slots" class="grid-8">
+                </div>
+        </section>
+
+        <section>
+            <h3>【選択肢】 ドラッグして上の枠へ</h3>
+            <div id="cards" class="grid-8">
+                </div>
+        </section>
+
+        <div style="margin-top: 30px;">
+            <button id="send-btn" onclick="sendAnswer()" class="main-btn">回答を送信する</button>
         </div>
-        <div id="cards" class="card-area">
-            <div class="card" draggable="true" ondragstart="drag(event)" id="c1">選択肢 A</div>
-            <div class="card" draggable="true" ondragstart="drag(event)" id="c2">選択肢 B</div>
-            <div class="card" draggable="true" ondragstart="drag(event)" id="c3">選択肢 C</div>
-            <div class="card" draggable="true" ondragstart="drag(event)" id="c4">選択肢 C</div>
-            <div class="card" draggable="true" ondragstart="drag(event)" id="c5">選択肢 C</div>
-        </div>
-        <button onclick="send()">回答を送信</button>
     </div>
 
     <script>
         const socket = io();
-        function allowDrop(ev) { ev.preventDefault(); }
-        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
+        // ドラッグ＆ドロップの処理
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
         function drop(ev) {
             ev.preventDefault();
             const data = ev.dataTransfer.getData("text");
-            if (ev.target.className === "slot" && ev.target.children.length === 0) {
-                ev.target.appendChild(document.getElementById(data));
+            const draggedElement = document.getElementById(data);
+            
+            // ドロップ先がスロットかつ、まだ中身が空の場合のみ許可
+            if (ev.target.classList.contains("slot") && ev.target.children.length === 0) {
+                ev.target.appendChild(draggedElement);
+            } 
+            // 選択肢エリアに戻す場合
+            else if (ev.target.id === "cards") {
+                ev.target.appendChild(draggedElement);
             }
         }
-        function send() {
-            const name = document.getElementById('username').value || "匿名";
-            const cards = Array.from(document.querySelectorAll('.slot')).map(s => s.innerText);
-            socket.emit('submit', { name, cards });
-            alert("送信しました！");
+
+        socket.on('update', state => {
+            document.getElementById('q-header').innerText = `第${state.currentNum}問`;
+            
+            // プレイヤーデータがリセットされた時（次の問題へ行った時）のみ画面を再構築
+            if (Object.keys(state.players).length === 0) {
+                const slotsContainer = document.getElementById('slots');
+                const cardsContainer = document.getElementById('cards');
+                
+                slotsContainer.innerHTML = "";
+                cardsContainer.innerHTML = "";
+
+                // 8つのスロットを作成
+                for (let i = 0; i < 8; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = "slot";
+                    slot.innerHTML = `<span class="slot-num">${i+1}</span>`;
+                    slot.ondrop = drop;
+                    slot.ondragover = allowDrop;
+                    slotsContainer.appendChild(slot);
+                }
+
+                // 8つの選択肢カードを作成
+                state.choices.forEach((text, index) => {
+                    const card = document.createElement('div');
+                    card.className = "card";
+                    card.id = "card-" + index;
+                    card.draggable = true;
+                    card.innerText = text;
+                    card.ondragstart = drag;
+                    cardsContainer.appendChild(card);
+                });
+
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').innerText = "回答を送信する";
+            }
+        });
+
+        function sendAnswer() {
+            const name = document.getElementById('username').value;
+            if (!name) {
+                alert("名前を入力してください");
+                return;
+            }
+
+            // スロット内のカードを順番に取得
+            const slots = document.querySelectorAll('.slot');
+            const answerOrder = [];
+            slots.forEach(slot => {
+                const card = slot.querySelector('.card');
+                if (card) {
+                    answerOrder.push(card.innerText);
+                }
+            });
+
+            if (answerOrder.length < 8) {
+                alert("8つの選択肢すべてを枠に入れてください！");
+                return;
+            }
+
+            // サーバーに送信
+            socket.emit('submit', {
+                name: name,
+                cards: answerOrder
+            });
+
+            // ボタンを無効化
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            btn.innerText = "送信完了（待機中...）";
         }
-        socket.on('update', state => { document.getElementById('q-num').innerText = `問題 ${state.currentNum}`; });
     </script>
+
+    <style>
+        /* index専用の追加スタイル */
+        .name-input {
+            font-size: 1.2rem;
+            padding: 10px;
+            width: 80%;
+            max-width: 400px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        .slot-num {
+            position: absolute;
+            color: #ccc;
+            font-size: 0.8rem;
+            top: 2px;
+            left: 5px;
+            pointer-events: none;
+        }
+        .slot {
+            position: relative;
+        }
+        .main-btn {
+            background: #007bff;
+            transition: background 0.3s;
+        }
+        .main-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        h3 {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+    </style>
 </body>
 </html>
