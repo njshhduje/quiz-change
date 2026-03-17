@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>回答者</title>
+    <title>回答者 - 並び替え</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1 id="q-header">第1問</h1>
-        <input type="text" id="username" placeholder="名前を入力" class="input-field">
+        <header class="index-header">
+            <h1 id="q-header">第1問</h1>
+            <input type="text" id="username" placeholder="名前を入力" class="input-field">
+        </header>
+
+        <p class="guide">1番から順にドラッグして入れてください</p>
         
-        <p class="guide">下の選択肢を上の枠へドラッグしてください</p>
-        <div id="slots" class="grid-8 sort-area"></div>
+        <div id="slots" class="slot-container"></div>
         
-        <hr>
-        <div id="cards" class="grid-8 sort-area"></div>
+        <hr class="separator">
+        
+        <div id="cards" class="card-grid"></div>
         
         <button id="send-btn" onclick="sendAnswer()" class="btn-primary">回答を送信</button>
     </div>
@@ -27,22 +31,23 @@
         const slotsEl = document.getElementById('slots');
         const cardsEl = document.getElementById('cards');
 
-        // 並び替え機能を有効化
-        [slotsEl, cardsEl].forEach(el => {
-            new Sortable(el, { group: 'quiz', animation: 150, ghostClass: 'ghost' });
-        });
+        // ドラッグ＆ドロップの初期化
+        new Sortable(slotsEl, { group: 'quiz', animation: 150, ghostClass: 'sortable-ghost' });
+        new Sortable(cardsEl, { group: 'quiz', animation: 150, ghostClass: 'sortable-ghost' });
 
         socket.on('update', state => {
             document.getElementById('q-header').innerText = `第${state.currentNum}問`;
+            // 全員リセットされた時のみ再構築
             if (Object.keys(state.players).length === 0) {
                 slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
-                // 空のスロットを8つ作成
+                // 8つの枠を作成
                 for(let i=0; i<8; i++) {
                     const s = document.createElement('div');
                     s.className = "slot-item";
+                    s.setAttribute('data-num', i + 1);
                     slotsEl.appendChild(s);
                 }
-                // カードを8つ作成
+                // 8つのカードを作成
                 state.choices.forEach(text => {
                     const c = document.createElement('div');
                     c.className = "card-item";
@@ -50,15 +55,21 @@
                     cardsEl.appendChild(c);
                 });
                 document.getElementById('send-btn').disabled = false;
+                document.getElementById('send-btn').innerText = "回答を送信";
             }
         });
 
         function sendAnswer() {
             const name = document.getElementById('username').value;
-            const answers = Array.from(slotsEl.children).map(el => el.innerText).filter(t => t !== "");
-            if (!name || answers.length < 8) return alert("名前を入力し、8つ全て枠に入れてください");
+            // 枠内にある文字だけを抽出
+            const answers = Array.from(slotsEl.children).map(el => el.innerText.trim()).filter(t => t !== "");
+            
+            if (!name) return alert("名前を入力してください");
+            if (answers.length < 8) return alert("8つ全て枠に入れてください！");
+            
             socket.emit('submit', { name, cards: answers });
             document.getElementById('send-btn').disabled = true;
+            document.getElementById('send-btn').innerText = "送信完了";
         }
     </script>
 </body>
