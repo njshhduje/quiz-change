@@ -7,20 +7,20 @@
 </head>
 <body>
     <div class="container admin-card">
-        <h1>管理パネル</h1>
+        <h2>管理パネル</h2>
         <div class="admin-btns">
-            <button onclick="send('next-step')" class="btn-primary">1つ表示</button>
-            <button onclick="send('scoring')" class="btn-scoring">採点する</button>
+            <button onclick="send('next-step')" class="btn-primary">① 1つ表示</button>
+            <button onclick="send('scoring')" class="btn-scoring">② 判定！</button>
             <button onclick="confirm('リセットしますか？') && send('reset')" class="btn-reset">リセット</button>
         </div>
-        <div id="p-list"></div>
+        <div id="p-list" style="margin-top:20px;"></div>
     </div>
     <script>
         const socket = io();
         const send = (type) => socket.emit('admin-control', { type });
         socket.on('update', state => {
-            document.getElementById('p-list').innerHTML = Object.values(state.players)
-                .map(p => `<div class="admin-row"><span>${p.name}</span> <span>${p.isCorrect || '未採点'}</span></div>`).join('');
+            document.getElementById('p-list').innerHTML = `<h3>オープン数: ${state.revealedCount}/8</h3>` + 
+                Object.values(state.players).map(p => `<div class="admin-row"><span>${p.name}</span><span>${p.isCorrect || '-'}</span></div>`).join('');
         });
     </script>
 </body>
