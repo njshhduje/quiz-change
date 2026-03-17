@@ -5,46 +5,39 @@
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="display-body">
+<body class="display-bg">
     <div class="display-header">
-        <h1 id="q-title">QUIZ STAGE</h1>
-        <div id="q-num-badge">第 1 問</div>
+        <h1 id="display-q-num">第 1 問</h1>
     </div>
 
-    <div class="display-2x3" id="grid">
-        </div>
+    <div class="display-2x3" id="grid"></div>
 
     <script>
         const socket = io();
         socket.on('update', state => {
-            document.getElementById('q-num-badge').innerText = `第 ${state.currentNum} 問`;
+            document.getElementById('display-q-num').innerText = `第 ${state.currentNum} 問`;
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
-
-            // 6人分取得して表示
+            
             const playerIds = Object.keys(state.players).slice(0, 6);
             playerIds.forEach(id => {
                 const p = state.players[id];
+                let cellsHtml = "";
                 
-                // 8つの回答リストを作成
-                let cardsHtml = "";
-                for(let i = 0; i < 8; i++) {
-                    const isRevealed = (i < state.revealedCount);
-                    const content = isRevealed ? p.cards[i] : "";
-                    cardsHtml += `
-                        <div class="ans-row ${isRevealed ? 'revealed' : 'hidden'}">
-                            <span class="ans-num">${i + 1}</span>
-                            <span class="ans-text">${content}</span>
+                for(let i=0; i<8; i++) {
+                    const isOpen = (i < state.revealedCount);
+                    cellsHtml += `
+                        <div class="ans-cell ${isOpen ? 'is-open' : ''}">
+                            <span class="cell-index">${i+1}</span>
+                            <span class="cell-val">${isOpen ? p.cards[i] : '？？？'}</span>
                         </div>`;
                 }
 
                 grid.innerHTML += `
-                    <div class="player-card-v2 ${p.isCorrect || ''}">
-                        <div class="player-tag">${p.name}</div>
-                        <div class="ans-list-v2">
-                            ${cardsHtml}
-                        </div>
-                        <div class="judge-overlay">${p.isCorrect === 'correct' ? 'CLEAR!' : 'MISS'}</div>
+                    <div class="p-panel ${p.isCorrect || ''}">
+                        <div class="p-header">${p.name}</div>
+                        <div class="p-body">${cellsHtml}</div>
+                        <div class="p-mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '×' : ''}</div>
                     </div>`;
             });
         });
