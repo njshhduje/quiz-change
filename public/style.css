@@ -322,3 +322,13 @@ body {
     font-weight: bold;
     pointer-events: none;
 }
+button:disabled {
+    background-color: #8e8e93 !important;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+input:disabled {
+    background-color: #f2f2f7;
+    color: #8e8e93;
+}
