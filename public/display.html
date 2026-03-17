@@ -6,7 +6,6 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body class="display-bg">
-    <div class="display-header"><h1>並べ替えクイズ</h1></div>
     <div class="display-grid-5" id="grid"></div>
 
     <script>
@@ -25,7 +24,10 @@
                     <div class="p-panel ${p.isCorrect || ''}">
                         <div class="p-name">${p.name}</div>
                         <div class="p-cards-grid">${cardsHtml}</div>
-                        <div class="mark">${p.isCorrect === 'correct' ? '◯' : p.isCorrect === 'incorrect' ? '×' : ''}</div>
+                        <div class="mark-container">
+                            ${p.isCorrect === 'correct' || p.isCorrect === 'all-correct' ? '<span class="mark-ok">◯</span>' : 
+                              p.isCorrect === 'incorrect' ? '<span class="mark-ng">×</span>' : ''}
+                        </div>
                     </div>`;
             });
         });
