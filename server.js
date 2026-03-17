@@ -39,5 +39,21 @@ io.on('connection', (socket) => {
         io.emit('update', gameState);
     });
 });
+socket.on('submit', (data) => {
+    // すでにそのソケットIDで回答が存在している場合は無視
+    if (gameState.players[socket.id]) {
+        console.log("二重送信をブロックしました:", data.name);
+        return;
+    }
 
+    // 回答を登録
+    gameState.players[socket.id] = { 
+        name: data.name, 
+        cards: data.cards, 
+        isCorrect: null 
+    };
+    
+    // 全員に更新を通知
+    io.emit('update', gameState);
+});
 server.listen(process.env.PORT || 3000);
