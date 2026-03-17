@@ -10,17 +10,26 @@ app.use(express.static('public'));
 
 let gameState = {
     currentNum: 1,
-    revealedCount: 0, // 0〜8まで1つずつ増やす
+    revealedCount: 0,
     players: {},
-    // 8個の選択肢（中身は適宜書き換えてください）
-    choices: ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D", "選択肢 E", "選択肢 F", "選択肢 G", "選択肢 H"]
+    // 選択肢8個
+    choices: ["選択肢1", "選択肢2", "選択肢3", "選択肢4", "選択肢5", "選択肢6", "選択肢7", "選択肢8"]
 };
 
 io.on('connection', (socket) => {
+    // 接続時に現在の状態を送信
     socket.emit('update', gameState);
 
+    // --- ここに socket.on を入れる ---
     socket.on('submit', (data) => {
-        gameState.players[socket.id] = { name: data.name, cards: data.cards, isCorrect: null };
+        // 二重送信防止
+        if (gameState.players[socket.id]) return;
+
+        gameState.players[socket.id] = { 
+            name: data.name, 
+            cards: data.cards, 
+            isCorrect: null 
+        };
         io.emit('update', gameState);
     });
 
@@ -32,28 +41,18 @@ io.on('connection', (socket) => {
         } else if (action.type === 'next-quiz') {
             gameState.currentNum++;
             gameState.revealedCount = 0;
-            gameState.players = {};
+            gameState.players = {}; // プレイヤー回答をリセット
         } else if (action.type === 'judge') {
-            if (gameState.players[action.id]) gameState.players[action.id].isCorrect = action.result;
+            if (gameState.players[action.id]) {
+                gameState.players[action.id].isCorrect = action.result;
+            }
         }
         io.emit('update', gameState);
     });
+    // ------------------------------
 });
-socket.on('submit', (data) => {
-    // すでにそのソケットIDで回答が存在している場合は無視
-    if (gameState.players[socket.id]) {
-        console.log("二重送信をブロックしました:", data.name);
-        return;
-    }
 
-    // 回答を登録
-    gameState.players[socket.id] = { 
-        name: data.name, 
-        cards: data.cards, 
-        isCorrect: null 
-    };
-    
-    // 全員に更新を通知
-    io.emit('update', gameState);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
-server.listen(process.env.PORT || 3000);
